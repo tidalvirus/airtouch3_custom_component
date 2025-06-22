@@ -93,7 +93,9 @@ TARGET_TEMPERATURE_STEP = 1
 
 SUPPORTED_FEATURES = \
     ClimateEntityFeature.TARGET_TEMPERATURE | \
-    ClimateEntityFeature.FAN_MODE 
+    ClimateEntityFeature.FAN_MODE | \
+    ClimateEntityFeature.TURN_ON | \
+    ClimateEntityFeature.TURN_OFF
 
 CLIMATE_ICON = "mdi:home-variant-outline"
 
@@ -268,7 +270,7 @@ class AirTouch3Climate(ClimateEntity):
         temperature = kwargs.get(ATTR_TEMPERATURE)
         if temperature is not None:
             _LOGGER.debug(f"[AT3Climate] async_set_temperature Set temperature to [{temperature}]")
-            await self._api.set_temperature(temperature)
+            await self._api.set_temperature_thermostat_mode(temperature)
 
     async def async_update(self):
         """Retrieve latest state."""

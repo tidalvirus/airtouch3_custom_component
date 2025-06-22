@@ -2,17 +2,19 @@
 import asyncio
 from datetime import timedelta
 import logging
+import aiohttp
 
 from async_timeout import timeout
 from custom_components.airtouch3.vzduch import Vzduch
 import voluptuous as vol
+from aiohttp import ClientSession
 
 from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PORT, CONF_TIMEOUT
 from .const import DOMAIN, TIMEOUT
 from homeassistant.exceptions import ConfigEntryNotReady
 import homeassistant.helpers.config_validation as cv
-from homeassistant.helpers.typing import HomeAssistantType
+from homeassistant.core import HomeAssistant
 from homeassistant.util import Throttle
 
 from . import config_flow  # noqa: F401
@@ -41,7 +43,7 @@ async def async_setup(hass, config):
     )
     return True
 
-async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry):
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Connect to Airtouch3 Unit"""
     conf = entry.data
 
@@ -53,10 +55,13 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry):
     if not vzduch_api:
         return False
     hass.data.setdefault(DOMAIN, {}).update({entry.entry_id: vzduch_api})
-    for component in COMPONENT_TYPES:
-        hass.async_create_task(
-            hass.config_entries.async_forward_entry_setup(entry, component)
-        )
+    # for component in COMPONENT_TYPES:
+    #     hass.async_create_task(
+    #         hass.config_entries.async_forward_entry_setup(entry, component)
+    #     )
+
+    await hass.config_entries.async_forward_entry_setups(entry, COMPONENT_TYPES)
+
     return True
 
 async def async_unload_entry(hass, config_entry):
@@ -75,11 +80,11 @@ async def async_unload_entry(hass, config_entry):
 async def api_init(hass, host, port, timeout = TIMEOUT):
     """Init the Airtouch unit."""
 
-    session = hass.helpers.aiohttp_client.async_get_clientsession()
     try:
-        _LOGGER.debug(f"We have host {host} port {port}")
-        device = Vzduch(session, host, port, timeout)
-        await device.async_update()
+        async with aiohttp.ClientSession() as session:
+            _LOGGER.debug(f"We have host {host} port {port}")
+            device = Vzduch(session, host, port, timeout)
+            await device.async_update()
     except asyncio.TimeoutError:
         _LOGGER.debug("Connection to %s timed out", host)
         raise ConfigEntryNotReady
