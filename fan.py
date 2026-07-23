@@ -11,7 +11,7 @@ from homeassistant.util.percentage import int_states_in_range, ranged_value_to_p
 SPEED_RANGE = (1, 100)
 
 SUPPORTED_FEATURES = \
-    FanEntityFeature.SET_SPEED
+    FanEntityFeature.SET_SPEED | FanEntityFeature.TURN_OFF | FanEntityFeature.TURN_ON
 
 from . import DOMAIN as AT3_DOMAIN
 

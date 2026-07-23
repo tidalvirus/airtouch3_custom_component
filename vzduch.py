@@ -87,10 +87,10 @@ class Vzduch:
         self._zones = []
         self._sensors = []
 
-    async def fetch_get(self, command):
+    async def fetch_get(self, session, command):
         """Send command via HTTP GET to Vzduch.Dotek Net server."""
         _LOGGER.debug("[Vzduch] Running fetch GET")
-        async with self._session.get("{base_url}{command}".format(
+        async with session.get("{base_url}{command}".format(
             base_url=self._base_url, command=command)) as resp_obj:
             response = await resp_obj.text()
             if (resp_obj.status == 200 or resp_obj.status == 204):
@@ -101,10 +101,10 @@ class Vzduch:
                 _LOGGER.error(f"Host [{self._host}] returned HTTP status code [{resp_obj.status}] for GET command [{command}]")
                 return None
 
-    async def fetch_post(self, command, data):
+    async def fetch_post(self, session, command, data):
         """Send command via HTTP POST to Vzduch.Dotek Net server."""
         _LOGGER.debug("[Vzduch] Running fetch POST")
-        async with self._session.post("{base_url}{command}".format(
+        async with session.post("{base_url}{command}".format(
             base_url=self._base_url, command=command), data=data) as resp_obj:
             response = await resp_obj.text()
             if (resp_obj.status == 200 or resp_obj.status == 204):
@@ -118,16 +118,11 @@ class Vzduch:
         """ Prepare the session and command"""
         _LOGGER.debug("[Vzduch] Running prep_fetch")
         try:
-            if self._session and not self._session.closed:
+            async with aiohttp.ClientSession() as session:
                 if verb == HTTP_GET:
-                    return await self.fetch_get(command)
+                    return await self.fetch_get(session, command)
                 else:
-                    return await self.fetch_post(command, data)
-            async with aiohttp.ClientSession() as self._session:
-                if verb == HTTP_GET:
-                    return await self.fetch_get(command)
-                else:
-                    return await self.fetch_post(command, data)
+                    return await self.fetch_post(session, command, data)
         except ValueError:
             pass
         except ServerDisconnectedError as error:
